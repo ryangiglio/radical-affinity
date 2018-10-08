@@ -1,0 +1,1766 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+    <style>
+	/*CJ CSS*/
+	@font-face {
+  font-family: 'Trocchi';
+  font-style: normal;
+  font-weight: 400;
+  src: local('Trocchi'), url(http://themes.googleusercontent.com/static/fonts/trocchi/v2/vnG3tpDGh17z5IKwB3RdMg.woff) format('woff');
+}
+        
+    /* RG CSS */
+        #outerWrapper {
+            width: 720px;
+            height: 720px;
+
+            margin: 0 auto;
+
+            position: relative;
+        }
+        #RG_dialog {
+            width: 620px;
+            height: 160px;
+
+            border-radius: 10px;
+
+            background-color: rgba(0, 0, 0, .7);
+            border: 10px solid black;
+
+            display: none;
+            position: absolute;
+
+            padding: 20px;
+
+            bottom: 20px;
+            left: 20px;
+        }
+        #RG_dialog.showing {
+            display: block;
+        }
+        #RG_dialog .staticLine {
+            font-size: 20px;
+        }
+        #RG_dialog .question {
+            font-size: 20px;
+            margin: 0;
+        }
+        #RG_dialog .choice {
+            cursor: pointer;
+        }       
+        #RG_dialog .choice:hover {
+            font-weight: bold;
+        }
+
+        #RG_dialog p {
+            color: white;
+        }        
+        #RG_dialog .next {
+            width: 60px;
+            height: 30px;
+
+            color: black;
+            background-color: white;
+
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+
+            text-decoration: none;
+            text-align: center;
+            border: 2px solid white;
+            border-radius: 5px;
+
+            line-height: 30px;
+        }
+        #RG_dialog .next:hover {
+            border-color: black;
+        }
+        #healthFlash {
+            position: absolute;
+            top: 0;
+            left: 0;
+            background-color: red;
+            opacity: 0;
+            width: 100%;
+            height: 100%;
+            display: none;
+        }
+        #healthFlash.showing {
+            display: block;
+        }        
+    </style>
+
+</head>
+
+<body style="background:black;" onmousedown="CJ_onMouseDown();"  >
+<!-- onkeydown="MC_preventDefault(event)" onclick="MC_preventDefault(event)" ondblclick="MC_preventDefault(event)" ontouchstart="MC_preventDefault(event)" ontouchmove="MC_preventDefault(event)" -->
+<div id="outerWrapper">
+<div id="inputDiv">
+<input id="input_field" type="text" x-webkit-speech />
+</div>
+<div id="MC_CanvasContainer" style="width:720px;height:720px;border:0;padding:0;margin:auto;overflow:hidden;background:white" >
+	<canvas width="720" height="720" id="MC_canvas" style="border:0;padding:0;margin:0"></canvas>
+</div>
+
+<div id="MC_HitboxesContainer" style="position:relative;border:0;padding:0;margin:0 auto;width:720px;height:720px;margin-top:-720px;display:none">
+
+	<div id="MC_HitboxesCellFront" style="border:0;padding:0;margin:0;width:720px;height:720px;position:absolute;left:0px;top:0px;display:none;">
+		<div id="MC_HitboxesCellFrontGuard" style="cursor:pointer;border:0;padding:0;margin:0;position:absolute;width: 230px;height: 530px;top: 40px;left: 240px;}" onmousedown="MC_hitboxClick('HitboxesCellFrontGuard')"></div>
+	</div>
+
+	<div id="MC_HitboxesCellRight" style="border:0;padding:0;margin:0;width:720px;height:720px;position:absolute;left:0px;top:0px;display:none;">
+		<div id="MC_HitboxesCellLeftVent" style="cursor:pointer;border:0;padding:0;margin:0;position:absolute;width: 100px;height: 130px;top: 180px;left: 570px;" onmousedown="MC_hitboxClick('HitboxesCellLeftVent')"></div>
+	</div>
+
+	<div id="MC_HitboxesCellLeft" style="border:0;padding:0;margin:0;width:720px;height:720px;position:absolute;left:0px;top:0px;display:none;">
+		<div id="MC_HitboxesCellRightVent" style="cursor:pointer;border:0;padding:0;margin:0;position:absolute;width: 100px;height: 122px;top: 185px;left: 50px;" onmousedown="MC_hitboxClick('HitboxesCellRightVent')"></div>
+	</div>
+
+	<div id="MC_HitboxesCellBack" style="border:0;padding:0;margin:0;width:720px;height:720px;position:absolute;left:0px;top:0px;display:none;">
+	</div>
+</div>
+
+<div id="RG_dialog">
+</div>
+<div id="healthFlash"></div>
+</div>
+
+</div>
+</body>
+<script src="jquery.min.js"> </script>
+
+<script>
+
+    var RG_gameData = {"days":[{"jail":{"leftVent":{"lines":["Comrade, my name is Falcon.","Every few days they torture us for more information. I don't know how much more of it I can take."]},"rightVent":{"lines":["Brother, you can call me Otter.","If you tell them what they want to know, they might go easier on you. But don't talk too much."]},"guard":{"staticLines":["Psst.","Don't worry, I'm one of you.","The last protest went very badly. 50 people were arrested. I'm surprised they managed to get someone of your status though.","I have a way of communicating with General Ghost, so I'll keep you updated on his plans. And I know he's going to want your input on things.","If you ever need to talk to me, you can call me Spider."]}},"interrogation":{"staticLines":["That was a cute little protest. If you idiots keep getting arrested there's not going to be any of you left.","I'm just going to ask you a few simple questions. I expect a few simple answers. Very simple."],"weapons":{"easy":"easy1","medium":"medium1","hard":"hard1"},"questions":[{"question":"What is your name","torture":{"default":"easy"},"options":[{"answer":"Your name","response":"Good. If you keep cooperating I think we'll get along very nicely.","revolution":0,"cooperation":5,"torture":false},{"answer":"(Say nothing)","response":"Don't be like that. I don't want to hurt you. But I will if I have to.","revolution":0,"cooperation":-5,"torture":true}]},{"question":"Who organized the protest yesterday?","torture":{"default":"easy"},"options":[{"answer":"Ghost","response":"We keep hearing that name. He has to have a real name. We'll find it soon enough.","cooperation":5,"revolution":-5,"torture":false},{"answer":"I did.","response":"Oh really now? Well I'm glad we got you off the streets, rebel scum.","cooperation":0,"revolution":0,"torture":true},{"answer":"I don't know.","response":"You were there. You had to know. Don't lie to us.","cooperation":-5,"revolution":5,"torture":true},{"answer":"(Say nothing)","response":"We picked up 100 people at the protest. One of them is goign to talk. No need to be a martyr.","cooperation":-5,"revolution":5,"torture":true}]},{"question":"What are you planning next?","torture":{"default":"medium"},"options":[{"answer":"We're assassinating your mother.","response":"Don't be a smartass. This isn't a joke. I'm the one with the weapons.","cooperation":-5,"revolution":0,"torture":true},{"answer":"I don't know.","response":"If you say so","cooperation":-5,"revolution":0,"torture":true},{"answer":"(Say nothing)","response":"Let's see if this helps loosen your lips a bit","cooperation":-5,"revolution":0,"torture":true}]}],"closing":{"cooperative":"I think you've had enough for today. If you keep talking, I think we're going to get along just fine.","uncooperative":"Just let those bruises settle in tonight. We'll talk again soon, and I won't be so nice."}}},{"jail":{"leftVent":{"lines":["If you get in the interrogator's head he might go a little easier on you. But don't stay on the same topic or they'll get mad."]},"rightVent":{"lines":["Believe or not, but I'm good friends with the interrogator's son John, and he's one of us. I can't imagine his Dad is too happy about it, either."]},"guard":{"staticLines":["Ghost is still going through with our protest on the Capitol square, but this time we're going to be armed. Let's see them push us around now.","You don't look too bad yet, but here's some medical supplies to patch up those cuts. I'll try to bring you more when I can."]}},"interrogation":{"staticLines":["So we heard a little rumor that you already have another protest planned. So soon! I think it's in everyone's best interest that we have some law inforcement armed and ready. Don't you agree? I sure hope so."],"empathyChoices":[{"key":"son","full":"I heard your son is going to be there. Do you really want police waiting to attack him?"}],"weapons":{"easy":"easy2","medium":"medium2","hard":"hard2"},"questions":[{"question":"Where are you gathering?","torture":{"default":"hard"},"options":[{"answer":"The capitol square","response":"Very good. That's what we thought. I like when we get a rat.","revolution":-5,"cooperation":5,"torture":false},{"answer":"The President's Office","response":"Very good. I'll pass that along.","revolution":2,"cooperation":2,"torture":false},{"answer":"I don't know","response":"Oh, but I think you do know.","revolution":5,"cooperation":-2,"torture":true},{"answer":"(Say nothing)","response":"You're going to learn to talk pretty soon.","revolution":5,"cooperation":-5,"torture":true}]},{"question":"I wouldn't want the police to be under-prepared. Is there anything else that we should know?","torture":{"default":"medium"},"options":[{"answer":"The protestors will be armed.","response":"Then we'll be armed more! They can't match our might.","cooperation":5,"revolution":-5,"torture":false},{"answer":"They're just picketing. There's no need for violence","response":"Don't tell us how to do our jobs. We'll squash them like bugs.","cooperation":2,"revolution":10,"torture":false},{"answer":"I don't know anything about it.","response":"We didn't beat your memory out of you yet. Don't play dumb.","cooperation":-2,"revolution":2,"torture":true},{"answer":"(Say nothing)","response":"Well then, we'll prepare for the worst. Best of luck to your little friends.","cooperation":-5,"revolution":-5,"torture":true}]}],"closing":{"cooperative":"Alas, you'd think they would learn not to bother with protests. I see that you've learned to cooperate. Much appreciated.","uncooperative":"Well, we'll find out from someone. You're not going to win this one."}}},{"jail":{"leftVent":{"lines":["I don't understand how they expect us to know anything about new plans. We're locked in here. They have to understand that."]},"rightVent":{"lines":["There's a new interrogator today and he's brutal. Be careful in there."]},"guard":{"staticLines":[],"reactiveLines":[{"pivotKey":"revolution","pivotValue":60,"above":"The protest was bloody, but we got the better of the police! A new day is dawning!","below":"They were ready for us. The protest was a massacre. We lost a lot of great men. May they rest in peace."}],"healthChoice":{"explanation":"I found a spare key to the storage room. Is there anything you need?","choices":[{"choice":"Get me some medicine if you can. I'm really hurting.","response":"Yeah, you're not looking too great. I'll see what I can do.","healthUp":20,"bonusEmpathy":true,"easyTorture":false},{"choice":"These guys told me that today's interrogator is really rough. It would be great if some of the worst tools could 'go missing'.","response":"Sure, I can make that happen.","healthUp":0,"bonusEmpathy":true,"easyTorture":true}]},"revolutionChoice":{"explanation":"Ghost wants your input on our next move. The protests aren't working. He wants to take things to the next level and bomb the Dept of Justice. What do you think?","choices":[{"choice":"We need some bloodshed to really get people's attention. Let's do it.","response":"They've hurt enough of our own. It's time for some revenge. I'll let him know."},{"choice":"We don't need to take any more lives. Let's hack their communications network so next time they're not ready for us.","response":"I think you're right. We're not ready to take it that far yet. I'll let Ghost know what you think."}]}}},"interrogation":{"staticLines":["Your old friend had to take a short leave. Family tragedy. His son fired some shots in the protest and the police made an example of him. Real shame.","But enoguh about that. As I'm sure you can imagine, it would be a huge problem for us if something happened to the Dept of Justice. I'd sure hate for something to happen to the Dept of Justice, but it sounds to me like something might."],"empathyChoices":[{"key":"prisoner","full":"Come on, how could I possibly know anything? I'm locked up in here."}],"weapons":{"easy":"easy3","medium":"medium3","hard":"hard3"},"questions":[{"question":"What are they planning to do to the DOJ?","torture":{"default":"hard","easyTorture":"medium"},"options":[{"answer":"We're going to bomb it.","response":"Sounds like the revolution is getting desparate. We'll be ready.","revolution":-5,"cooperation":5,"torture":false},{"answer":"We're going to hack it.","response":"Staying home and hiding behind your computers, huh? Pathetic.","revolution":-5,"cooperation":5,"torture":true},{"answer":"I don't know","response":"Yeah that's what I thought. And we're going to make sure you think twice before asking any questions","revolution":5,"cooperation":-5,"torture":true},{"answer":"(Say nothing)","response":"Just just going to sit back and let it happen, then? Fine. Have it your way.","revolution":5,"cooperation":-5,"torture":true}]},{"question":"Where can we find Ghost? I want to ask him a few...questions.","torture":{"default":"medium","easyTorture":"easy"},"options":[{"answer":"Ghost is everywhere. You'll never find him.","response":"I won't tolerate defiance from a lowly prisoner!","cooperation":-5,"revolution":5,"torture":true},{"answer":"I don't know.","response":"Nobody does. It's almost like he's a myth.","cooperation":-2,"revolution":2,"torture":true},{"answer":"(Say nothing)","response":"You're going to wish you talked when this is over.","cooperation":-5,"revolution":2,"torture":true}]}],"closing":{"cooperative":"Maybe I'm getting soft in my old age. No need to beat up a prisoner if he's happy to give up his friends, right?","uncooperative":"We'll catch the people you're protecting soon enough, and I doubt they'll return the favor."}}}],"tortureWeapons":{"easy":{"damage":-2,"filename":"images/easy1.png"},"medium":{"damage":-5,"filename":"images/easy2.png"},"hard":{"damage":-15,"filename":"images/easy2.png"}}};
+
+    /*
+    $.getJSON('data.json', function(response) {
+        console.log(response);
+        RG_gameData = response;
+    });
+    */
+</script>
+
+
+<script>
+var MC_context=document.getElementById("MC_canvas").getContext("2d");
+	
+
+</script>
+
+<script>
+
+
+(function() {
+window.canvas = document.getElementById('MC_canvas');
+window.ctx = window.canvas.getContext('2d');
+
+var SLICE = Array.prototype.slice;
+/*
+Simple bind implementation. Example usage:
+bind(this, yourCallback); // Sets the context to "this"
+*/
+window.bind = function(ctx, cb) {
+	var args = SLICE.call(arguments, 2);
+	return function() {
+		if (typeof cb == 'string') {
+			ctx[cb].apply(ctx, args.concat(SLICE.call(arguments, 0)));
+		} else {
+			cb.apply(ctx, args.concat(SLICE.call(arguments, 0)));
+		}
+	}
+}
+
+// Set up a Timer to call window.tick (found in your_code.js)
+var reqAnim = window.requestAnimationFrame || window.webkitRequestAnimationFrame;
+
+var Timer = function() {
+	this._time = Date.now();
+	this._tick = bind(this, 'tick');
+	reqAnim.call(window, this._tick);
+};
+
+Timer.prototype.now = 0;
+Timer.prototype.tick = function() {
+	reqAnim.call(window, this._tick);
+
+	var time = Date.now();
+	var dt = time - this._time;
+	this._time = time;
+	this.now += dt;
+	this.onTick && this.onTick(dt);
+}
+
+window.timer = new Timer();
+window.input = {
+	onMouseDown: function(x, y) {},
+	onMouseUp: function(x, y) {},
+	onMouseMove: function(x, y) {}
+};
+
+canvas.addEventListener('mousedown', function(e) {
+	input.onMouseDown(e.clientX, e.clientY);
+}, false);
+	canvas.addEventListener('mouseup', function(e) {
+		input.onMouseUp(e.clientX, e.clientY);
+	}, false);
+canvas.addEventListener('mousemove', function(e) {
+	input.onMouseMove(e.clientX, e.clientY);
+}, false);
+
+})();
+
+
+
+
+
+    var CANVAS_WIDTH = canvas.width;
+	var HALF_CANVAS_WIDTH = CANVAS_WIDTH * 0.5;
+	var CANVAS_HEIGHT = canvas.height;
+	var HALF_CANVAS_HEIGHT = CANVAS_HEIGHT * 0.5;
+
+	var STATE_TITLE = 0;
+	var STATE_GAME = 1;
+	var STATE_DEATH = 2;
+	var STATE_VICTORY = 3;
+	var STATE_HOVERHAND = 4;
+	var STATE_TORTURE = 5;
+	var MC_drawSequenceInterval;
+
+	var gameState = STATE_TITLE;
+
+    var introScreen = 0;
+	var introInterval;
+
+	var helpCount = 0;
+    var person;
+    var level;
+	//timer for title heart beat
+	var titleTick = 0;
+	
+	var pause = false; 
+	var MAX_HEALTH = 100;
+	var HALF_MORALITY = 50;
+	var INSIDER_TRUST = 50;
+	var INTERROGATOR_1_EMPATHY = 50;
+	var INTERROGATOR_2_EMPATHY = 25;
+	var meter;
+	
+	var MC_scrollCounter = 0;
+	var MC_scrollXCounter = -720;
+	var MC_scrollXTarget = -720;
+	var MC_scrollDirection = "none";
+	var MC_scrollCurrentImage = "front";
+
+	var MC_scrollOverflowImage = "none";
+	var MC_overflowXCounter = 0;
+
+	var MC_scrollSpeed = 36;
+	
+	var MC_substate = "looking";
+	
+    var RG_day = 0;
+    var RG_talkedToGuardToday = false;
+    var RG_talkedToLeftToday = false;
+    var RG_talkedToRightToday = false;
+    var RG_unlockEmpathy = false;
+    var RG_easyTorture = false;
+    var RG_empathyTimeout;
+    var RG_empathyLength = 5000;
+
+    var RG_switchingScenes = false;
+    var RG_tortureQuestionIndex = 0;
+    var RG_singleCooperation = 0;
+    var RG_totalCooperation = 50;
+    var RG_revolution = 50;
+    
+	var CJ_HANDSHAKE_X1 = 280;
+	var CJ_HANDSHAKE_Y1 = 150;
+	var CJ_HANDSHAKE_X2 = 160;
+	var CJ_HANDSHAKE_Y2 = 250;
+	
+	var CJ_WEP1_Y1 = 60;
+	var CJ_WEP1_Y2 = 378;
+	
+	var CJ_WEP2_Y1 = 60;
+	var CJ_WEP2_Y2 = 303;
+	
+	
+	var CJ_WEP3_Y1 = 60;
+	var CJ_WEP3_Y2 = 559;
+	
+	var CJ_ENTROPY = 0;
+	var CJ_difficulty = "medium";
+	var CJ_tortureStart = false;
+
+    var audio = new Audio();
+	
+	//ACTION NEEDED : UPDATE THIS WITH A PROPER LOADER
+	//UPDATE THIS WITH A PROPER LOADER
+	var MC_imageContainer = {};
+	MC_imageContainer.testImagePNG = new Image();
+		MC_imageContainer.testImagePNG.src = "assets/skewTest.jpg";
+	MC_imageContainer.testImage2PNG = new Image();
+		MC_imageContainer.testImage2PNG.src = "assets/placeholderImages/skewTest2.png";
+	MC_imageContainer.testImage3PNG = new Image();
+		MC_imageContainer.testImage3PNG.src = "assets/placeholderImages/skewTest3.png";
+/**torture scene image load **/
+MC_imageContainer.testImage4PNG = new Image();
+		MC_imageContainer.testImage4PNG.src = "assets/easy.png";
+	MC_imageContainer.testImage5PNG = new Image();
+		MC_imageContainer.testImage5PNG.src = "assets/medium.png";
+	MC_imageContainer.testImage6PNG = new Image();
+		MC_imageContainer.testImage6PNG.src = "assets/hard.png";
+MC_imageContainer.testImage7PNG = new Image();
+		MC_imageContainer.testImage7PNG.src = "assets/hand.png";
+MC_imageContainer.testImage8PNG = new Image();
+		MC_imageContainer.testImage8PNG.src = "assets/weapons_table.jpg";
+	
+	MC_imageContainer.tortureStoryScenePNG = new Image();
+		MC_imageContainer.tortureStoryScenePNG.src = "assets/jailcell_torture.jpg";
+
+	var stringToEvaluate = "";
+
+	function bbs_playSound(soundToPlay, boolLoop, milliseconds)
+	{	
+		soundToPlay = "assets/sounds/" + soundToPlay;
+		var audioPath = soundToPlay.split(".");
+		var extension = null;
+	
+		soundToPlay = audioPath[0];
+		extension = audioPath[1];
+		if(boolLoop == true){
+			if(navigator.userAgent.toLowerCase().indexOf('firefox') > -1)
+			{
+			audio = new Audio(soundToPlay+".ogg");
+			}
+			else{
+			audio = new Audio(soundToPlay+"."+extension);
+			}
+			audio.loop = true;
+			audio.play();
+		}
+		else if(boolLoop == false){
+			if(navigator.userAgent.toLowerCase().indexOf('firefox') > -1)
+			{	
+				audio = new Audio(soundToPlay + ".ogg");
+			}
+			else{
+				audio = new Audio(soundToPlay+"."+extension);
+			}
+		setTimeout(function(){audio.play();},milliseconds);
+		audio.play();
+		}
+	}
+    
+
+	function cj_checkTranscript(){
+			
+			 stringToEvaluate =  input_field.value; 
+			
+			var patt1=new RegExp("hello", "i");
+			
+			if (patt1.test(stringToEvaluate) == true){
+			
+			console.log("You in fact did say hello or Hello");		
+			}		
+			//stringToEvaluate = '';
+			//input_field.value = '';
+		  
+
+
+		}
+		
+		
+		
+		//MARIOS FUNCTIONS
+
+
+
+function MC_hitboxClick(MC_hitboxID){
+	switch(MC_hitboxID)
+	{
+		case "HitboxesCellFrontGuard":
+            if ( !RG_talkedToGuardToday ) {
+                RG_playGuard(RG_gameData.days[RG_day].jail.guard);
+            }
+            else {
+                console.log("already talked");
+            }
+
+			break;
+            
+		case "HitboxesCellLeftVent":
+            if ( !RG_talkedToLeftToday ) {
+                RG_talkVent(RG_gameData.days[RG_day].jail.leftVent, "left");
+            }
+            else {
+                console.log("already talked");
+            }
+
+			break;
+
+		case "HitboxesCellRightVent":
+            if ( !RG_talkedToRightToday ) {
+                RG_talkVent(RG_gameData.days[RG_day].jail.rightVent, "right");
+            }
+            else {
+                console.log("already talked");
+            }
+
+			break;
+	}
+}
+
+
+
+//ACTION NEEDED : there is a bug in here somewhere. No clue where. Best of luck to ya.
+function MC_textBox(textInput, x, y, lineWidth, lineHeight, textColor) {
+        var wordsArray = textInput.split(" ");
+        var lineString = "";
+      	MC_context.fillStyle = textColor;
+
+        for(var i = 0; i < wordsArray.length; i++)
+        {
+	        var measuredText = MC_context.measureText(lineString + wordsArray[i] + " ");
+	        if (measuredText.width > lineWidth)
+	        {
+	        	console.log("writting -" + lineString + "-");
+		        MC_context.fillText(lineString, x, y);
+		        lineString = wordsArray[i] + " ";
+		        y += lineHeight;
+	        }
+
+	        else
+	        {
+	        	lineString = lineString + wordsArray[i] + " ";
+	        }
+        }
+
+      }
+
+
+
+
+	//END OF MARIOS FUNCTIONS
+
+function RG_playGuard(guardData) {
+    MC_substate = "talking";
+
+    RG_guardSayLines(guardData);
+}
+
+function RG_guardSayLines(guardData) {
+    var lines = guardData.staticLines;
+
+    var currLine = 0;
+
+    $('#RG_dialog').addClass('showing');
+
+    // Add the "next" button
+    $('#RG_dialog').append('<a href="#" class="next" id="nextGuardLine">Next</a>');
+
+    // When you click the next button
+    $('#nextGuardLine').on('click', function() {
+        // If currLine is less than the total lines, he has more to say
+        if ( currLine < lines.length ) {
+            console.log("he has something to say");
+            // Remove the line he just said
+            $('#currLine').remove();
+            // Add the next line
+            $('#RG_dialog').append('<p class="staticLine" id="currLine">' + lines[currLine] + '</p>');
+
+            currLine++;
+        }
+        // He has nothing more to say
+        else {
+            console.log("No more to say");
+            // If he has a choice for you about your health
+            if ( typeof( guardData.healthChoice ) !== "undefined" ) {
+                $('#RG_dialog').html('');
+                RG_guardHealthChoice(guardData);
+            }
+            else {
+                // Mark the guard flag
+                RG_talkedToGuardToday = true;
+
+                // Allow you to look around
+                MC_substate = "looking";
+
+                $('#RG_dialog').removeClass('showing');
+            }
+        }
+        event.preventDefault();
+    });
+
+    // Click the next button for the first time
+    $('#nextGuardLine').trigger('click');
+}
+
+function RG_guardHealthChoice(guardData) {
+    choiceData = guardData.healthChoice;
+
+    $('#RG_dialog').append('<p class="question">' + choiceData.explanation + '</p>');
+
+    for ( var i = 0; i < choiceData.choices.length; i++ ) {
+        var choiceElement = $('<p class="choice">' + choiceData.choices[i].choice + '</p>');
+
+        choiceElement.data('response', choiceData.choices[i].response);
+
+        choiceElement.data('healthUp', choiceData.choices[i].healthUp);
+        
+        console.log("choice empathy " + choiceData.choices[i].bonusEmpathy);
+        choiceElement.data('empathy', choiceData.choices[i].bonusEmpathy);
+
+        choiceElement.data('easyTorture', choiceData.choices[i].easyTorture);
+        
+        choiceElement.on('click', function() {
+            var response = $(this).data('response');
+
+            person.health = person.health + $(this).data('healthUp'); 
+
+            RG_unlockEmpathy = $(this).data('empathy');
+
+            RG_easyTorture = $(this).data('easyTorture');
+
+            $('#RG_dialog').html('');
+
+            $('#RG_dialog').append('<p class=staticLine">' + response + '</p>');
+
+            $('#RG_dialog').append('<a href="#" class="next" id="choiceOver">Done</a>');
+
+            $('#choiceOver').on('click', function() {
+                if ( typeof( guardData.revolutionChoice) !== "undefined" ) {
+                    $('#RG_dialog').html('');
+                    RG_revolutionChoice(guardData);
+                }
+                else {
+                    // Mark the guard flag
+                    RG_talkedToGuardToday = true;
+
+                    // Allow you to look around
+                    MC_substate = "looking";
+
+                    $('#RG_dialog').removeClass('showing');
+                }
+                event.preventDefault();
+            });
+        });
+
+        $('#RG_dialog').append(choiceElement);
+    }
+}
+
+function RG_revolutionChoice(guardData) {
+    choiceData = guardData.revolutionChoice;
+
+    $('#RG_dialog').append('<p class="question">' + choiceData.explanation + '</p>');
+
+    for ( var i = 0; i < choiceData.choices.length; i++ ) {
+        var choiceElement = $('<p class="choice">' + choiceData.choices[i].choice + '</p>');
+
+        choiceElement.data('response', choiceData.choices[i].response);
+
+        choiceElement.on('click', function() {
+            var response = $(this).data('response');
+
+            $('#RG_dialog').html('');
+
+            $('#RG_dialog').append('<p class=staticLine">' + response + '</p>');
+
+            $('#RG_dialog').append('<a href="#" class="next" id="choiceOver">Done</a>');
+
+            $('#choiceOver').on('click', function() {
+                // Mark the guard flag
+                RG_talkedToGuardToday = true;
+
+                // Allow you to look around
+                MC_substate = "looking";
+
+                $('#RG_dialog').removeClass('showing');
+
+                event.preventDefault();
+            });
+        });
+
+        $('#RG_dialog').append(choiceElement);
+    }
+}
+
+function RG_talkVent(ventData, side) {
+    var currLine = 0;
+    var lines = ventData.lines;
+
+    $('#RG_dialog').html('');
+
+    $('#RG_dialog').addClass('showing');
+
+    // Add the "next" button
+    $('#RG_dialog').append('<a href="#" class="next" id="nextVentLine">Next</a>');
+
+    // When you click the next button
+    $('#nextVentLine').on('click', function() {
+        // If currLine is less than the total lines, he has more to say
+        if ( currLine < lines.length ) {
+            console.log("he has something to say");
+            // Remove the line he just said
+            $('#currLine').remove();
+            // Add the next line
+            $('#RG_dialog').append('<p class="staticLine" id="currLine">' + lines[currLine] + '</p>');
+
+            currLine++;
+        }
+        // He has nothing more to say
+        else {
+            // Allow you to look around
+            MC_substate = "looking";
+
+            $('#RG_dialog').removeClass('showing');
+
+            if ( side === "left" ) {
+                RG_talkedToLeftToday = true;
+            }
+            else if ( side === "right" ) {
+                RG_talkedToRightToday = true;
+            }
+        }
+        event.preventDefault();
+    });
+
+    // Click the next button for the first time
+    $('#nextVentLine').trigger('click');
+}
+
+function RG_playTortureStory(tortureStoryData) {
+    var currLine = 0;
+    var lines = tortureStoryData.staticLines;
+
+    $('#RG_dialog').html('');
+
+    $('#RG_dialog').addClass('showing');
+
+    // Add the "next" button
+    $('#RG_dialog').append('<a href="#" class="next" id="nextTortureLine">Next</a>');
+
+    // When you click the next button
+    $('#nextTortureLine').on('click', function(event) {
+        // If currLine is less than the total lines, he has more to say
+        if ( currLine < lines.length ) {
+            console.log("he has something to say");
+            // Remove the line he just said
+            $('#currLine').remove();
+            // Add the next line
+            $('#RG_dialog').append('<p class="staticLine" id="currLine">' + lines[currLine] + '</p>');
+
+            currLine++;
+        }
+        // He has nothing more to say
+        else {
+            $('#RG_dialog').removeClass('showing');
+
+            RG_setupScene(STATE_HOVERHAND);
+        }
+        event.preventDefault();
+    });
+
+    // Click the next button for the first time
+    $('#nextTortureLine').trigger('click');
+}
+
+function RG_setupScene(scene) {
+    RG_switchingScenes = true;
+
+    switch (scene) {
+        case "cell":
+            $('#outerWrapper').animate({
+                opacity: 0
+                }, 1000, function() {
+                    RG_talkedToGuardToday = false;
+                    RG_talkedToLeftToday = false;
+                    RG_talkedToRightToday = false;
+                    RG_unlockEmpathy = false;
+
+                    if ( RG_day === 1 ) {
+                        RG_unlockEmpathy = true;
+                    }
+                    if ( RG_day === 2 ) {
+                        RG_unlockEmpathy = true;
+                    }
+                
+					gameState = "cell";
+
+                    MC_substate = "looking";
+
+                    $('#MC_HitboxesContainer').css('display', 'block');
+
+                    $('#RG_dialog').html('');
+                    
+                    $('#RG_dialog').removeClass('showing');
+
+                    $('#outerWrapper').animate({
+                        opacity: 1
+                    }, 1000, function() {
+                            audio.pause();
+
+                            bbs_playSound("Dark_Fog.mp3", true, 0);
+
+                            RG_switchingScenes = false;
+                        }
+                    );
+                }
+            );
+            break;
+
+        case "tortureStory":
+            $('#outerWrapper').animate({
+                opacity: 0
+                }, 1000, function() {
+                    // Hide the jail hitboxes
+                    $('#MC_HitboxesContainer').css('display', 'none');
+                    
+                    // Change the state to torture story
+                    gameState = "tortureStory";
+
+                    // Start playing the torture story dialogue
+                    RG_playTortureStory(RG_gameData.days[RG_day].interrogation);
+
+                    $('#outerWrapper').animate({
+                        opacity: 1
+                    }, 1000, function() {
+                            audio.pause();
+
+                            bbs_playSound("Penumbra.mp3", true, 0);
+
+                            RG_switchingScenes = false;
+                        }
+                    );
+                }
+            );
+            break;
+
+        case STATE_HOVERHAND:
+            // If we're coming from the torture story
+            if ( gameState === "tortureStory" ) {
+                // Reset the question index, because this is a new interrogation
+
+                RG_tortureQuestionIndex = 0;
+            }
+
+            var question = RG_gameData.days[RG_day].interrogation.questions[RG_tortureQuestionIndex];
+            
+            if ( RG_easyTorture === true ) {
+                if ( question.torture.default === "hard" ) {
+                    CJ_difficulty = "medium";
+                }
+                else if ( question.torture.default === "medium" ) {
+                    CJ_difficulty = "easy";
+                }
+                else if ( question.torture.default === "easy" ) {
+                    CJ_difficulty = "none";
+                }
+            }
+            else {
+                CJ_difficulty = question.torture.default;
+            }
+            
+            $('#outerWrapper').animate({
+                opacity: 0
+                }, 1000, function() {
+                    CJ_HANDSHAKE_X1 = 280;
+                    CJ_HANDSHAKE_Y1 = 150;
+                    CJ_WEP1_Y1 = 60;
+                    CJ_WEP2_Y1 = 60;
+                    CJ_WEP3_Y1 = 60;
+                    
+                    gameState = STATE_HOVERHAND;
+
+                    $('#outerWrapper').animate({
+                        opacity: 1
+                    }, 1000, function() {
+                            RG_switchingScenes = false;
+
+                            console.log(RG_unlockEmpathy);
+                            // If you have an empathy option
+                            if ( RG_unlockEmpathy ) {
+                                $('#RG_dialog').html('');
+
+                                // Present the empathy options
+                                var empathyChoices = RG_gameData.days[RG_day].interrogation.empathyChoices;
+
+                                for ( var i = 0; i < empathyChoices.length; i++ ) {
+                                    var choiceElement = $('<p class="choice" id="' + empathyChoices[i].key + '">' + empathyChoices[i].full + ' (Say: ' + empathyChoices[i].key + ')</p>');
+
+                                    choiceElement.on('click', function() {
+                                        clearTimeout(RG_empathyTimeout);
+                                    
+                                        $('#RG_dialog').html('');
+
+                                        $('#RG_dialog').removeClass('showing');
+
+                                        if ( CJ_difficulty === "hard" ) {
+                                            CJ_difficulty = "medium";
+                                        }
+                                        else if ( CJ_difficulty === "medium" ) {
+                                            CJ_difficulty = "easy";
+                                        }
+                                        else if ( CJ_difficulty === "easy" ) {
+                                            CJ_difficulty = "none";
+                                        }
+
+                                        RG_unlockEmpathy = false;
+
+                                        // Call CJ_selectWeapon when you choose one
+                                        CJ_selectWeapon();
+                                    });
+
+                                    $('#RG_dialog').append(choiceElement);
+                                }
+
+                                $('#RG_dialog').addClass('showing');
+
+                                RG_empathyTimeout = setTimeout(function() {
+                                    CJ_selectWeapon();
+                                    clearTimeout(RG_empathyTimeout);
+                                }, RG_empathyLength);
+
+                                $('#RG_dialog').animate({
+                                    opacity: 0
+                                }, RG_empathyLength);
+
+                            }
+                            else {
+                                // Select a weapon immediately
+                                CJ_selectWeapon();
+                            }
+                        }
+                    );
+                }
+            );
+
+            break;
+
+        case "interrogationQuestion":
+            $('#outerWrapper').animate({
+                opacity: 0
+                }, 1000, function() {
+                    console.log("After fade out");
+                
+                    $('#RG_dialog').removeClass('showing');
+
+                    RG_switchingScenes = false;
+                    gameState = "interrogationQuestion";
+
+                    CJ_tortureStart = false;
+
+                    $('#RG_dialog').removeClass('showing');
+
+                    $('#RG_dialog').stop().css('opacity', "1");
+
+                    console.log("Before fade out");
+                    $('#outerWrapper').animate({
+                        opacity: 1
+                    }, 1000, function() {
+                            $('#RG_dialog').html('');
+
+                            $('#RG_dialog').addClass('showing');
+
+                            var question = RG_gameData.days[RG_day].interrogation.questions[RG_tortureQuestionIndex];
+
+                            $('#RG_dialog').append('<p class="question">' + question.question + '</p>');
+
+                            console.log("Length: " + question.options.length);
+                            for ( var i = 0; i < question.options.length; i++ ) {
+                                var choiceElement = $('<p class="choice">' + question.options[i].answer + '</p>');
+
+                                choiceElement.data('response', question.options[i].response);
+
+                                choiceElement.data('cooperation', question.options[i].cooperation);
+
+                                console.log("revolution value: " + question.options[i].revolution);
+                                choiceElement.data('revolution', question.options[i].revolution);
+
+                                choiceElement.data('torture', question.options[i].torture);
+
+                                choiceElement.on('click', function() {
+                                    var response = $(this).data('response');
+
+                                    // Do all things that happen
+                                    RG_singleCooperation = RG_singleCooperation + $(this).data('cooperation');
+
+                                    console.log("old revolution" + RG_revolution);
+                                    console.log("adding revolution " + $(this).data('revolution'));
+                                    RG_revolution = RG_revolution + $(this).data('revolution');
+                                    console.log("new revolution" + RG_revolution);
+
+                                    if ( $(this).data('torture') ) {
+                                        person.health = person.health + RG_gameData.tortureWeapons[CJ_difficulty].damage;
+                                        $('#healthFlash').addClass('showing');
+                                        $('#healthFlash').animate({
+                                            opacity: .6
+                                            }, 100, function() {
+                                            $('#healthFlash').animate({
+                                                opacity: 0
+                                                }, 200, function() {
+                                                $('#healthFlash').removeClass('showing');
+                                                });
+                                        });
+                                        
+                                    }
+
+                                    $('#RG_dialog').html('');
+
+                                    $('#RG_dialog').append('<p class=staticLine">' + response + '</p>');
+
+                                    $('#RG_dialog').append('<a href="#" class="next" id="choiceOver">Done</a>');
+
+                                    $('#choiceOver').on('click', function() {
+                                        RG_tortureQuestionIndex++;
+
+                                        // If we have more questions
+                                        if ( RG_tortureQuestionIndex < RG_gameData.days[RG_day].interrogation.questions.length ) {
+                                            $('#RG_dialog').removeClass('showing');
+                                            RG_setupScene(STATE_HOVERHAND);
+                                        }
+                                        else {
+                                            RG_setupScene('interrogationWrapup');
+                                        }
+
+                                        event.preventDefault();
+                                    });
+                                });                                
+
+                                $('#RG_dialog').append(choiceElement);
+                            }
+                        }
+                    );
+                }
+            );
+
+            break;
+        case "interrogationWrapup":
+            $('#outerWrapper').animate({
+                opacity: 0
+                }, 1000, function() {
+                    gameState = "interrogationWrapup";
+
+                    $('#RG_dialog').removeClass('showing');
+
+                    $('#RG_dialog').html('');
+
+                    var closing = RG_gameData.days[RG_day].interrogation.closing;
+
+                    $('#RG_dialog').append('<a href="#" class="next" id="wrapupOver">Done</a>');
+
+                    if ( RG_singleCooperation > 0 ) {
+                        $('#RG_dialog').append('<p class="staticLine" id="currLine">' + closing.cooperative + '</p>');
+                    }
+                    else {
+                        $('#RG_dialog').append('<p class="staticLine" id="currLine">' + closing.uncooperative + '</p>');
+                    }
+
+                    $('#wrapupOver').on('click', function(event) {
+                        RG_totalCooperation = RG_totalCooperation + RG_singleCooperation;
+
+                        $('#RG_dialog').html('');
+
+                        RG_day++;
+
+                        RG_setupScene('cell');
+
+                        event.preventDefault();
+                    });                        
+
+                    $('#outerWrapper').animate({
+                        opacity: 1
+                    }, 1000, function() {
+                        $('#RG_dialog').addClass('showing');
+                    });
+                }
+            );
+
+            break;
+            
+    }
+}
+
+function CJ_selectWeapon() {
+ CJ_tortureStart = true;
+    // Animate the hand downward
+}
+
+function RG_showEmpathyOptions() {
+    empathyOption = RG_gameData.days[RG_day].interrogation
+}
+
+function CJ_hitBoxClick(CJ_hitboxID){
+    switch(CJ_hitboxID){
+	
+	
+	case "left":
+	
+			MC_scrollSpeed = 720;
+			
+			///////////////////////////////////////////////////////
+			//SCROLLING IMAGE AS AN ALTERNATIVE TO SNAPPING IMAGE//
+			///////////////////////////////////////////////////////
+			/*
+			if(MC_keyCode == 65)
+			{
+				MC_scrollSpeed = 36;
+			}
+			*/
+			
+			MC_scrollDirection = "left";
+			MC_scrollXTarget += 720;
+
+			if(MC_scrollXTarget == 720)
+			{
+				MC_scrollOverflowImage = "testImage3PNG";
+				MC_overflowXCounter = -720;
+			}
+
+
+			switch(MC_scrollCurrentImage)
+			{
+				case "front":
+					MC_HitboxesCellFront.style.display="none";
+					MC_scrollCurrentImage = "left";
+					MC_HitboxesCellLeft.style.display="block";
+					break;
+				case "left":
+					MC_HitboxesCellLeft.style.display="none";
+					MC_scrollCurrentImage = "back";
+					MC_HitboxesCellBack.style.display="block";
+					break;
+				case "back":
+					MC_HitboxesCellBack.style.display="none";
+					MC_scrollCurrentImage = "right";
+					MC_HitboxesCellRight.style.display="block";
+					break;
+				case "right":
+					MC_HitboxesCellRight.style.display="none";
+					MC_scrollCurrentImage = "front";
+					MC_HitboxesCellFront.style.display="block";
+					break;
+			}
+	
+			break;
+	case "right":
+	MC_scrollSpeed = 720;
+			
+			///////////////////////////////////////////////////////
+			//SCROLLING IMAGE AS AN ALTERNATIVE TO SNAPPING IMAGE//
+			///////////////////////////////////////////////////////
+			/*
+			if(MC_keyCode == 68)
+			{
+				MC_scrollSpeed = 36;
+			}
+			*/
+
+			MC_scrollDirection = "right";
+			MC_scrollXTarget -= 720;
+
+			if(MC_scrollXTarget == -2880)
+			{
+				MC_scrollOverflowImage = "testImage2PNG";
+				MC_overflowXCounter = 720;
+			}
+
+			switch(MC_scrollCurrentImage)
+			{
+				case "front":
+					MC_HitboxesCellFront.style.display="none";
+					MC_scrollCurrentImage = "right";
+					MC_HitboxesCellRight.style.display="block";
+					break;
+				case "right":
+					MC_HitboxesCellRight.style.display="none";
+					MC_scrollCurrentImage = "back";
+					MC_HitboxesCellBack.style.display="block";
+					break;
+				case "back":
+					MC_HitboxesCellBack.style.display="none";
+					MC_scrollCurrentImage = "left";
+					MC_HitboxesCellLeft.style.display="block";
+					break;
+				case "left":
+					MC_HitboxesCellLeft.style.display="none";
+					MC_scrollCurrentImage = "front";
+					MC_HitboxesCellFront.style.display="block";
+					break;
+			}
+	
+	
+	
+	
+	
+	        break;
+	
+	}
+
+
+
+}
+
+
+
+	//END OF MARIOS FUNCTIONS
+	
+
+
+function init() {
+		//gameStart = false;
+		person = new Person();
+
+		gameState = STATE_TITLE;
+		//gameState = "tortureStory";
+		//gameState = STATE_HOVERHAND;
+		//gameState = STATE_VICTORY;
+
+		MC_drawSequenceInterval = setInterval(draw, 1000/30);
+	}
+
+
+
+	function Person() {
+		
+		this.health = MAX_HEALTH;
+		this.morality = HALF_MORALITY;
+		this.frame = 0;
+		this.frameCounter = 0;
+		this.draw = function () {
+
+
+			//draw meters 
+
+			
+
+			meter = person.health * CANVAS_HEIGHT / MAX_HEALTH;
+			ctx.beginPath();
+			ctx.rect(0,0, 720, 10);
+			ctx.fillStyle = '#FF0000';
+			ctx.fill();
+
+		}
+		
+		this.update = function () {
+			
+		
+		
+		}
+	}
+
+	function update() {
+		switch (gameState) {
+			case STATE_TITLE:
+				//todo: title
+				if (titleTick == 0) {
+					//playBeat();
+				}
+				titleTick++;
+				if (titleTick > 20) { titleTick = 0; }
+
+				break;
+			case STATE_GAME:
+			
+				person.update();
+
+				
+				break;
+			case STATE_DEATH:
+
+				//	init();
+				break;
+				
+				
+			case STATE_HOVERHAND:
+					cj_HOVERHAND();
+					break;
+		}
+	}
+
+	function draw() {
+
+		ctx.beginPath();
+		ctx.rect(0, 0, CANVAS_WIDTH * 2 , HALF_CANVAS_HEIGHT * 2);
+		ctx.fillStyle = '#B13E0F';
+		ctx.fill();
+
+
+        switch (gameState) {
+            case "cell":
+            if(MC_scrollDirection === "right")
+            {
+                MC_scrollXCounter -= MC_scrollSpeed;
+                MC_overflowXCounter -= MC_scrollSpeed;
+                
+                if(MC_scrollXCounter<= MC_scrollXTarget)
+                {
+                    MC_scrollXCounter = MC_scrollXTarget;
+                    MC_scrollOverflowXCounter = 0;
+                    MC_scrollDirection = "none";
+
+                    if(MC_scrollOverflowImage !== "none")
+                    {
+                        MC_scrollXCounter = 0;
+                        MC_scrollXTarget = 0;
+                        MC_scrollOverflowImage = "none";
+                    }
+                }
+            }
+            if(MC_scrollDirection === "left")
+            {
+                MC_scrollXCounter += MC_scrollSpeed;
+                MC_overflowXCounter += MC_scrollSpeed;
+
+                if(MC_scrollXCounter>= MC_scrollXTarget)
+                {
+                    MC_scrollXCounter = MC_scrollXTarget;
+                    MC_scrollOverflowXCounter = 0;
+                    MC_scrollDirection = "none";
+
+                    if(MC_scrollOverflowImage !== "none")
+                    {
+                        MC_scrollXCounter = -2160;
+                        MC_scrollXTarget = -2160;
+                        MC_scrollOverflowImage = "none";
+                    }
+                }
+            }
+
+            ctx.drawImage(MC_imageContainer.testImagePNG,MC_scrollXCounter,0);
+            if(MC_scrollOverflowImage !== "none")
+            {
+                MC_context.drawImage(MC_imageContainer[MC_scrollOverflowImage],MC_overflowXCounter,0);
+            }
+
+            // If you've done all your jail cell RG_dialog for the day
+            if ( RG_talkedToGuardToday && RG_talkedToLeftToday && RG_talkedToRightToday && !RG_switchingScenes ) {
+                RG_setupScene("tortureStory");
+            }
+            
+            break;
+
+            case "tortureStory":
+                $("#MC_CanvasContainer").css("cursor","default");
+            
+                // Draw torture scene
+                MC_context.drawImage(MC_imageContainer.tortureStoryScenePNG,0,0);
+                MC_context.drawImage(MC_imageContainer.chainsawPNG,212,37);
+                MC_context.drawImage(MC_imageContainer.swordPNG,138,37);
+                MC_context.drawImage(MC_imageContainer.chickenPNG,64,37);
+                //MC_textBox("test test test test test test test test test test test test test test test test test test test test test test test test test test test", 40, 550, 640, 20, "black");
+                MC_substate = "waiting";
+                
+                break;
+
+            case STATE_DEATH:
+                ctx.clearRect(0, 0, ctx.width, ctx.height);
+                ctx.font = "20px Arial";
+                ctx.fillStyle = "#FF0000";
+                ctx.textBaseline = "bottom";
+
+                if (person.water > 0) {
+                    ctx.fillText("You didn't make it. Water in your remains can be salvaged", HALF_CANVAS_WIDTH, 50);
+                    ctx.fillText("by subsequent travelers to increase their own odds of survival.", HALF_CANVAS_WIDTH, 80);
+                } else {
+                    ctx.fillText("You died of thirst. You left no water for subsequent travelers", HALF_CANVAS_WIDTH, 50);
+                    ctx.fillText("to increase their own odds of survival.", HALF_CANVAS_WIDTH, 80);
+                }
+
+                ctx.fillText("Press Esc", HALF_CANVAS_WIDTH, 120);
+
+                break;
+
+            case STATE_VICTORY:
+
+                
+                
+            
+            //ctx.translate(HALF_CANVAS_WIDTH, HALF_CANVAS_HEIGHT);   
+        //	ctx.rotate( (Math.PI / 180) * 25); 
+            //ctx.translate(-HALF_CANVAS_WIDTH, -HALF_CANVAS_HEIGHT);  
+                
+                //
+                /*
+                if (CJ_ZOOM_COUNT <= 1){
+                console.log(CJ_ZOOM_COUNT);
+                //CJ_ZOOM_COUNT = 1;
+                CJ_ZOOM_COUNT = CJ_ZOOM_COUNT + .01; 
+                }
+                else{
+                //CJ_ZOOM_COUNT = CJ_ZOOM_COUNT - .1; 
+                
+                }
+                ctx.scale(CJ_ZOOM_COUNT,CJ_ZOOM_COUNT);
+                */
+                
+                ctx.clearRect(0, 0, ctx.width, ctx.height);
+                ctx.fillStyle = "black";
+                ctx.fillRect(0, 0, 920, 920);
+                
+                
+                ctx.fillStyle = "lightgray";
+                ctx.fillRect(20, 10, 620, 420);
+                ctx.textAlign = 'center';
+                
+                
+                
+                ctx.textAlign = 'center';
+                //ctx.font = "20px Arial";
+                ctx.fillStyle = "#000";
+                
+                ctx.textBaseline = "bottom";
+                ctx.font = "30px Trocchi";
+                ctx.fillText("The Chaotic Times", HALF_CANVAS_WIDTH, 50);
+
+                
+                ctx.font = "20px Arial";
+                ctx.fillText("Press Esc", HALF_CANVAS_WIDTH, 120);
+
+                break;
+
+            case STATE_TITLE:
+                $("#MC_CanvasContainer").css("cursor","pointer");
+                 
+                ctx.clearRect(0, 0, ctx.width, ctx.height);
+
+
+                ctx.fillStyle = "black";
+                ctx.fillRect(0, 0, 720, 720);
+                ctx.textAlign = 'center';
+
+                ctx.font = "50px Arial";
+                ctx.fillStyle = "white";
+                ctx.textBaseline = "bottom";
+                ctx.fillText("Radical Affinity", HALF_CANVAS_WIDTH, 170);
+
+
+                 ctx.font = "25px Arial";
+                ctx.fillStyle = "white";
+                ctx.fillText("Click to continue", HALF_CANVAS_WIDTH, HALF_CANVAS_HEIGHT + 10);			
+
+
+                break;
+                
+                
+                
+                
+                
+                
+                
+                
+                
+            case STATE_HOVERHAND:
+                MC_context.drawImage(MC_imageContainer.testImage8PNG,0,0);
+                
+                //COme back to me
+            ctx.drawImage(MC_imageContainer.testImage4PNG,30,CJ_WEP1_Y1,205, CJ_WEP1_Y2 );
+            if(MC_scrollOverflowImage !== "none")
+            {
+                MC_context.drawImage(MC_imageContainer[MC_scrollOverflowImage],MC_overflowXCounter,0);
+            }
+            
+            
+            ctx.drawImage(MC_imageContainer.testImage5PNG,250,CJ_WEP2_Y1,190, CJ_WEP2_Y2 );
+            if(MC_scrollOverflowImage !== "none")
+            {
+                MC_context.drawImage(MC_imageContainer[MC_scrollOverflowImage],MC_overflowXCounter,0);
+            }
+            
+            ctx.drawImage(MC_imageContainer.testImage6PNG,480,CJ_WEP3_Y1,150, CJ_WEP3_Y2 );
+            if(MC_scrollOverflowImage !== "none")
+            {
+                MC_context.drawImage(MC_imageContainer[MC_scrollOverflowImage],MC_overflowXCounter,0);
+            }
+            
+            ctx.drawImage(MC_imageContainer.testImage7PNG,CJ_HANDSHAKE_X1,CJ_HANDSHAKE_Y1,CJ_HANDSHAKE_X2, CJ_HANDSHAKE_Y2 );
+            //Shakes the hand
+            
+            /*
+            CJ_ENTROPY = 6 * Math.random();
+            if (CJ_ENTROPY < 3){
+            CJ_HANDSHAKE_X1 = CJ_HANDSHAKE_X1 - 1;
+            CJ_HANDSHAKE_Y1 = CJ_HANDSHAKE_Y1 - 1;
+            }
+            
+            else if(CJ_HANDSHAKE_X1 > 3){
+            CJ_HANDSHAKE_X1 = CJ_HANDSHAKE_X1 + 1;
+            CJ_HANDSHAKE_Y1 = CJ_HANDSHAKE_Y1 + 1 ;
+            }
+            //CJ_HANDSHAKE_Y1 = CJ_HANDSHAKE_Y1 + 1;
+            */
+            
+            //MOves the hand 
+
+            if (CJ_difficulty == "easy"){
+                
+                if (CJ_HANDSHAKE_X1 >= 10){
+				
+				
+                CJ_HANDSHAKE_X1 = CJ_HANDSHAKE_X1 - 4;
+					
+				
+	
+	
+	
+                }
+				
+				if (CJ_HANDSHAKE_X1 <= 10 && CJ_tortureStart == true) {
+                if ( CJ_HANDSHAKE_Y1 <= 720 ) {
+					CJ_HANDSHAKE_Y1 = CJ_HANDSHAKE_Y1 + 4;
+					 CJ_WEP1_Y1 = CJ_WEP1_Y1 + 4;
+					  //CJ_WEP1_Y2 =  CJ_WEP1_Y2 + 1
+                      }
+                      else {
+                      if ( !RG_switchingScenes ) {
+                          RG_switchingScenes = true;
+                            RG_setupScene('interrogationQuestion');
+                            }
+                      }
+					
+					
+					}
+    }
+	
+	     else if (CJ_difficulty == "medium"){
+		 
+		 
+			  if (CJ_HANDSHAKE_X1 >= 280){
+				CJ_HANDSHAKE_X1 = CJ_HANDSHAKE_X1 - 4;
+			  }
+		 
+		 if (CJ_HANDSHAKE_X1 <= 280 && CJ_tortureStart == true) {
+                if ( CJ_HANDSHAKE_Y1 <= 720 ) {
+					CJ_HANDSHAKE_Y1 = CJ_HANDSHAKE_Y1 + 4;
+					 CJ_WEP2_Y1 = CJ_WEP2_Y1 + 4;
+					  
+					}
+                else {
+                      if ( !RG_switchingScenes ) {
+                          RG_switchingScenes = true;
+                            RG_setupScene('interrogationQuestion');
+                            }
+                      }
+                }
+		 
+		 }
+           
+            else if (CJ_difficulty == "hard"){
+		 
+		 
+			 if (CJ_HANDSHAKE_X1 <= 480){
+				CJ_HANDSHAKE_X1 = CJ_HANDSHAKE_X1 + 4;
+			 }
+		 
+		 if (CJ_HANDSHAKE_X1 >= 480 && CJ_tortureStart == true) {
+                if ( CJ_HANDSHAKE_Y1 <= 720 ) {
+					CJ_HANDSHAKE_Y1 = CJ_HANDSHAKE_Y1 + 4;
+					 CJ_WEP3_Y1 = CJ_WEP3_Y1 + 4;
+					  
+                }
+                else {
+                      if ( !RG_switchingScenes ) {
+                          RG_switchingScenes = true;
+                            RG_setupScene('interrogationQuestion');
+                            }
+                      }
+                }
+		 
+		 }
+		 
+		  else if (CJ_difficulty == "none"){
+		  
+		  
+		   CJ_HANDSHAKE_Y1 = CJ_HANDSHAKE_Y1 + 4;
+		  
+		  }
+
+            
+            
+            
+            if(MC_scrollOverflowImage !== "none")
+            {
+                MC_context.drawImage(MC_imageContainer[MC_scrollOverflowImage],MC_overflowXCounter,0);
+            }
+                
+
+                    break; 
+
+            case "interrogationQuestion":
+                $("#MC_CanvasContainer").css("cursor","default");
+            
+                // Draw torture scene
+                MC_context.drawImage(MC_imageContainer.tortureStoryScenePNG,0,0);
+                MC_context.drawImage(MC_imageContainer.chainsawPNG,212,37);
+                MC_context.drawImage(MC_imageContainer.swordPNG,138,37);
+                MC_context.drawImage(MC_imageContainer.chickenPNG,64,37);
+                //MC_textBox("test test test test test test test test test test test test test test test test test test test test test test test test test test test", 40, 550, 640, 20, "black");
+                MC_substate = "waiting";
+                
+                break;
+
+            case "interrogationWrapup":
+                $("#MC_CanvasContainer").css("cursor","default");
+            
+                // Draw torture scene
+                MC_context.drawImage(MC_imageContainer.tortureStoryScenePNG,0,0);
+                MC_context.drawImage(MC_imageContainer.chainsawPNG,212,37);
+                MC_context.drawImage(MC_imageContainer.swordPNG,138,37);
+                MC_context.drawImage(MC_imageContainer.chickenPNG,64,37);
+                //MC_textBox("test test test test test test test test test test test test test test test test test test test test test test test test test test test", 40, 550, 640, 20, "black");
+                MC_substate = "waiting";
+                
+                break;
+                    
+        }
+		if (pause == true) {
+			ctx.font = "20px Arial";
+			ctx.fillStyle = "#FF0000";
+			ctx.textBaseline = "bottom";
+			ctx.fillText("Paused", HALF_CANVAS_WIDTH, 50);
+
+		}
+
+
+		 if($("#inputDiv").is(":visible")){
+		
+		cj_checkTranscript();
+				ctx.font = "15px Arial";
+				ctx.fillStyle = "white";
+				ctx.textBaseline = "bottom";
+				ctx.fillText(stringToEvaluate, HALF_CANVAS_WIDTH, 190);
+		
+		
+		}
+		
+		
+		
+		
+	}
+
+timer.onTick = function (dt) {
+
+		if (pause == false) {
+			update();
+		}
+		draw();
+
+	}
+
+
+
+	input.onMouseUp = function (x, y) {
+		// handle mouseup
+		//	person.energy = 0;
+	}
+
+	input.onMouseMove = function (x, y) {
+		// handle mousemove
+	}
+
+
+	$(document).keydown(function (event) {
+		var MC_keyCode = event.which;
+
+
+	if(gameState === "cell" && MC_substate === "looking")
+	{
+		if(MC_keyCode == 39   || MC_keyCode == 68  && MC_scrollDirection === "none")
+		{
+			MC_scrollSpeed = 720;
+			//ACTION NEEDED : low priority :  REMOVE SCROLLING IMAGE SUPPORT, IT MAKES THINGS NEEDLESSLY COMPLICATED
+			
+			///////////////////////////////////////////////////////
+			//SCROLLING IMAGE AS AN ALTERNATIVE TO SNAPPING IMAGE//
+			///////////////////////////////////////////////////////
+			/*
+			if(MC_keyCode == 68)
+			{
+				MC_scrollSpeed = 36;
+			}
+			*/
+
+			MC_scrollDirection = "right";
+			MC_scrollXTarget -= 720;
+
+			if(MC_scrollXTarget == -2880)
+			{
+				MC_scrollOverflowImage = "testImage2PNG";
+				MC_overflowXCounter = 720;
+			}
+
+			switch(MC_scrollCurrentImage)
+			{
+				case "front":
+					MC_HitboxesCellFront.style.display="none";
+					MC_scrollCurrentImage = "right";
+					MC_HitboxesCellRight.style.display="block";
+					break;
+				case "right":
+					MC_HitboxesCellRight.style.display="none";
+					MC_scrollCurrentImage = "back";
+					MC_HitboxesCellBack.style.display="block";
+					break;
+				case "back":
+					MC_HitboxesCellBack.style.display="none";
+					MC_scrollCurrentImage = "left";
+					MC_HitboxesCellLeft.style.display="block";
+					break;
+				case "left":
+					MC_HitboxesCellLeft.style.display="none";
+					MC_scrollCurrentImage = "front";
+					MC_HitboxesCellFront.style.display="block";
+					break;
+			}
+
+		}
+		if(MC_keyCode == 37  || MC_keyCode == 65  && MC_scrollDirection === "none")
+		{
+				MC_scrollSpeed = 720;
+			
+			///////////////////////////////////////////////////////
+			//SCROLLING IMAGE AS AN ALTERNATIVE TO SNAPPING IMAGE//
+			///////////////////////////////////////////////////////
+			/*
+			if(MC_keyCode == 65)
+			{
+				MC_scrollSpeed = 36;
+			}
+			*/
+			
+			MC_scrollDirection = "left";
+			MC_scrollXTarget += 720;
+
+			if(MC_scrollXTarget == 720)
+			{
+				MC_scrollOverflowImage = "testImage3PNG";
+				MC_overflowXCounter = -720;
+			}
+
+
+			switch(MC_scrollCurrentImage)
+			{
+				case "front":
+					MC_HitboxesCellFront.style.display="none";
+					MC_scrollCurrentImage = "left";
+					MC_HitboxesCellLeft.style.display="block";
+					break;
+				case "left":
+					MC_HitboxesCellLeft.style.display="none";
+					MC_scrollCurrentImage = "back";
+					MC_HitboxesCellBack.style.display="block";
+					break;
+				case "back":
+					MC_HitboxesCellBack.style.display="none";
+					MC_scrollCurrentImage = "right";
+					MC_HitboxesCellRight.style.display="block";
+					break;
+				case "right":
+					MC_HitboxesCellRight.style.display="none";
+					MC_scrollCurrentImage = "front";
+					MC_HitboxesCellFront.style.display="block";
+					break;
+			}
+		}
+	}
+	});
+	
+	
+	
+	//window.speekToMe() to call the popup RG_dialog
+	window.speekToMe = function(){
+ 
+ $("#inputDiv").show();
+ setTimeout(window.processSpeech, 15000 );
+ 
+ }
+	
+	
+ window.processSpeech = function(){
+ 
+ $("#inputDiv").hide();
+ //window.cj_checkTranscript();
+ stringToEvaluate = '';
+input_field.value = '';
+ }
+ //Set an interval that checks if the div that has the input field is not Hidden
+ //if its not hidden then you have a set amount of time to type or say what you need to  before it gets processed. 
+ 
+ 
+$("#inputDiv").hide();
+
+
+function MC_preventDefault(event){
+	event.preventDefault();
+}
+
+
+var CJ_onMouseDown = function () {
+		// handle mousedown
+		
+		switch (gameState) {
+				case STATE_TITLE:
+					MC_HitboxesContainer.style.display="block";
+					MC_HitboxesCellFront.style.display="block";
+
+                    RG_setupScene("cell");
+
+					break;
+
+				case STATE_GAME:
+					pause = !pause;
+
+					break;
+				case STATE_DEATH:
+				case STATE_VICTORY:
+					//init();
+
+					break;
+			}
+		
+	
+	}
+	
+	
+var cj_HOVERHAND = function () {
+
+
+
+
+
+
+}	
+	var CJ_ShiftHAND = function (CJ_difficulty){
+	
+
+	
+	
+	}
+	
+	
+init();
+
+</script>
+
+<script>
+
+</script>
+
+
+
+<style>
+#inputDiv{
+position: absolute;
+margin-left: 44%;
+margin-top: 20%;
+}
+
+</style>
+
+
+</html>
